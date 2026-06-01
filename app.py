@@ -15,9 +15,7 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
-# ================= SIMPLE USER DB =================
 users = {}
-
 pdf_text = ""
 
 # ================= HOME =================
@@ -30,13 +28,13 @@ def home():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        u = request.form.get('username')
+        p = request.form.get('password')
 
-        if username in users:
-            return render_template("signup.html", message="User already exists ❌")
+        if u in users:
+            return render_template("signup.html", message="User exists ❌")
 
-        users[username] = password
+        users[u] = p
         return redirect('/login')
 
     return render_template("signup.html")
@@ -46,23 +44,16 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        u = request.form.get('username')
+        p = request.form.get('password')
 
-        if username in users and users[username] == password:
-            session['user'] = username
+        if u in users and users[u] == p:
+            session['user'] = u
             return redirect('/dashboard')
 
-        return render_template("login.html", message="Invalid credentials ❌")
+        return render_template("login.html", message="Invalid ❌")
 
     return render_template("login.html")
-
-
-# ================= LOGOUT =================
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    return redirect('/login')
 
 
 # ================= DASHBOARD =================
@@ -71,10 +62,10 @@ def dashboard():
     if 'user' not in session:
         return redirect('/login')
 
-    return render_template("index.html")
+    return render_template("index.html", answer="", message="")
 
 
-# ================= UPLOAD PDF =================
+# ================= UPLOAD =================
 @app.route('/upload', methods=['POST'])
 def upload():
     global pdf_text
@@ -85,27 +76,20 @@ def upload():
     file = request.files.get('pdf')
 
     if not file:
-        return render_template("index.html", message="No file selected ❌")
+        return render_template("index.html", message="No file ❌")
 
-    try:
-        reader = PdfReader(file)
-        pdf_text = ""
+    reader = PdfReader(file)
+    pdf_text = ""
 
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                pdf_text += text + "\n"
+    for page in reader.pages:
+        t = page.extract_text()
+        if t:
+            pdf_text += t + "\n"
 
-        if not pdf_text.strip():
-            return render_template("index.html", message="PDF has no readable text ❌")
-
-        return render_template("index.html", message="PDF uploaded successfully ✅")
-
-    except Exception as e:
-        return render_template("index.html", message=f"Error: {str(e)}")
+    return render_template("index.html", message="PDF uploaded ✅")
 
 
-# ================= ASK AI =================
+# ================= ASK AI (FIXED) =================
 @app.route('/ask', methods=['POST'])
 def ask():
     global pdf_text
@@ -118,32 +102,26 @@ def ask():
     if not pdf_text.strip():
         return render_template("index.html", answer="Upload PDF first ❌")
 
-    safe_pdf = pdf_text[:1500]
-
     prompt = f"""
-Answer only from PDF:
+Answer ONLY from PDF:
 
-{safe_pdf}
+{pdf_text[:1500]}
 
 Question: {question}
 """
 
-    # 🔥 SAFE RETRY SYSTEM
-    for _ in range(2):
-        try:
-            response = client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt
-            )
-            return render_template("index.html", answer=response.text)
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-pro-latest",
+            contents=prompt
+        )
+        return render_template("index.html", answer=response.text)
 
-        except Exception:
-            time.sleep(2)
-
-    return render_template(
-        "index.html",
-        answer="⚠️ AI temporarily busy / quota reached. Try again later."
-    )
+    except Exception:
+        return render_template(
+            "index.html",
+            answer="⚠️ AI busy / quota issue"
+        )
 
 
 # ================= RUN =================

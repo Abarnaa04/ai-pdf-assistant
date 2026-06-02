@@ -58,7 +58,6 @@
             margin-top:10px;
         }
 
-        /* 🔥 BUTTONS */
         button{
             padding:12px 20px;
             margin-top:10px;
@@ -68,6 +67,7 @@
             font-weight:bold;
             transition:0.3s;
             font-size:14px;
+            margin-right:10px;
         }
 
         .btn-upload{
@@ -88,6 +88,16 @@
         .btn-ask:hover{
             box-shadow:0 0 15px #E100FF;
             transform:scale(1.05);
+        }
+
+        .btn-download{
+            background: linear-gradient(90deg,#00c851,#007e33);
+            color:white;
+        }
+
+        .btn-clear{
+            background: linear-gradient(90deg,#ff512f,#dd2476);
+            color:white;
         }
 
         .answer{
@@ -144,6 +154,15 @@
 
         <button class="btn-ask">🤖 Ask AI</button>
 
+    </form>
+
+    <!-- EXTRA BUTTONS -->
+    <form action="/download" method="POST">
+        <button class="btn-download">📥 Download Answer</button>
+    </form>
+
+    <form action="/clear" method="POST">
+        <button class="btn-clear">🧹 Clear PDF</button>
     </form>
 
     {% if answer %}
